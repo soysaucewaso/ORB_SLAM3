@@ -119,6 +119,9 @@ int main(int argc, char **argv) {
     }
     else
         selected_device = devices[0];
+    selected_device.hardware_reset();
+//rs2::device_hub hub(ctx);
+//selected_device = hub.wait_for_device();
 
     std::vector<rs2::sensor> sensors = selected_device.query_sensors();
     int index = 0;

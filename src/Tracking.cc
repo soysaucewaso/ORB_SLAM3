@@ -1932,35 +1932,47 @@ void Tracking::Track()
         // Initial camera pose estimation using motion model or relocalization (if tracking is lost)
         if(!mbOnlyTracking)
         {
+	    cout << "STATE: 0" << endl;
 
             // State OK
             // Local Mapping is activated. This is the normal behaviour, unless
             // you explicitly activate the "only tracking" mode.
             if(mState==OK)
             {
+		    cout << "STATE: 1" << endl;
 
                 // Local Mapping might have changed some MapPoints tracked in last frame
                 CheckReplacedInLastFrame();
 
                 if((!mbVelocity && !pCurrentMap->isImuInitialized()) || mCurrentFrame.mnId<mnLastRelocFrameId+2)
                 {
+		    cout << "STATE: 2" << endl;
                     Verbose::PrintMess("TRACK: Track with respect to the reference KF ", Verbose::VERBOSITY_DEBUG);
                     bOK = TrackReferenceKeyFrame();
                 }
                 else
                 {
+		    cout << "STATE: 3" << endl;
                     Verbose::PrintMess("TRACK: Track with motion model", Verbose::VERBOSITY_DEBUG);
                     bOK = TrackWithMotionModel();
-                    if(!bOK)
+                    if(!bOK){
                         bOK = TrackReferenceKeyFrame();
+			    cout << "STATE: 8" << endl;
+
+		    }
+			    cout << bOK << endl;
+
                 }
+	    cout << bOK << endl;
 
 
                 if (!bOK)
                 {
+		    cout << "STATE: 4" << endl;
                     if ( mCurrentFrame.mnId<=(mnLastRelocFrameId+mnFramesToResetIMU) &&
                          (mSensor==System::IMU_MONOCULAR || mSensor==System::IMU_STEREO || mSensor == System::IMU_RGBD))
                     {
+			    cout << "STATE: 5" << endl;
                         mState = LOST;
                     }
                     else if(pCurrentMap->KeyFramesInMap()>10)
@@ -2120,23 +2132,30 @@ void Tracking::Track()
         std::chrono::steady_clock::time_point time_StartLMTrack = std::chrono::steady_clock::now();
 #endif
         // If we have an initial estimation of the camera pose and matching. Track the local map.
+	cout << "BOK"<< bOK << endl;
         if(!mbOnlyTracking)
         {
             if(bOK)
             {
+		cout << "BO1"<< bOK << endl;
                 bOK = TrackLocalMap();
 
             }
-            if(!bOK)
+            if(!bOK){
+		cout << "BO2"<< bOK << endl;
                 cout << "Fail to track local map!" << endl;
+	    }
         }
         else
         {
+		cout << "BO3"<< bOK << endl;
             // mbVO true means that there are few matches to MapPoints in the map. We cannot retrieve
             // a local map and therefore we do not perform TrackLocalMap(). Once the system relocalizes
             // the camera we will use the local map again.
-            if(bOK && !mbVO)
+            if(bOK && !mbVO){
+		cout << "BO4"<< bOK << endl;
                 bOK = TrackLocalMap();
+	    }
         }
 
         if(bOK)
@@ -2148,8 +2167,10 @@ void Tracking::Track()
                 Verbose::PrintMess("Track lost for less than one second...", Verbose::VERBOSITY_NORMAL);
                 if(!pCurrentMap->isImuInitialized() || !pCurrentMap->GetIniertialBA2())
                 {
+		    cout << pCurrentMap->isImuInitialized();
+		    cout << pCurrentMap->GetIniertialBA2();
                     cout << "IMU is not or recently initialized. Reseting active map..." << endl;
-                    mpSystem->ResetActiveMap();
+	       	    mpSystem->ResetActiveMap();
                 }
 
                 mState=RECENTLY_LOST;
@@ -3023,6 +3044,7 @@ bool Tracking::TrackLocalMap()
                 mCurrentFrame.mvpMapPoints[i] = static_cast<MapPoint*>(NULL);
         }
     }
+    cout << "TRACK: " << mnMatchesInliers;
 
     // Decide if the tracking was succesful
     // More restrictive if there was a relocalization recently
@@ -3054,7 +3076,7 @@ bool Tracking::TrackLocalMap()
     }
     else
     {
-        if(mnMatchesInliers<30)
+        if(mnMatchesInliers<5)
             return false;
         else
             return true;
